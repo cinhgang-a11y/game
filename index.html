@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mascot Kart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1b1530; --paper: #fffaf0; --accent: #ff4f7b; --accent2: #ffc93c; --good: #2ecc71;
+    --panel: rgba(27, 21, 48, 0.82); --line: rgba(255, 255, 255, 0.16);
+    font-family: 'Baloo 2', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1530; color: var(--paper); user-select: none; -webkit-user-select: none; }
+  canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  button { font: inherit; cursor: pointer; border: 0; }
+  [hidden] { display: none !important; }
+
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; gap: 16px; }
+  .scroll { justify-content: flex-start; overflow-y: auto; padding-top: 24px; padding-bottom: 32px; }
+  .logo { font-size: clamp(48px, 11vw, 120px); font-weight: 800; line-height: .9; letter-spacing: -2px; text-align: center; color: var(--accent2);
+    text-shadow: 0 6px 0 #c2410c, 0 12px 24px rgba(0,0,0,.4); transform: rotate(-3deg); margin: 0; }
+  .logo span { display: block; color: var(--accent); text-shadow: 0 6px 0 #9d174d, 0 12px 24px rgba(0,0,0,.4); }
+  .tag { opacity: .85; margin: 0; text-align: center; font-size: 18px; }
+  .big { background: var(--accent); color: white; font-size: 26px; font-weight: 800; padding: 10px 36px; border-radius: 18px;
+    box-shadow: 0 6px 0 #9d174d; transition: transform .08s; }
+  .big:hover { transform: translateY(-2px); }
+  .big:active { transform: translateY(4px); box-shadow: 0 2px 0 #9d174d; }
+  .ghost { background: transparent; color: var(--paper); border: 2px solid var(--line); padding: 8px 18px; border-radius: 14px; font-size: 17px; }
+  .ghost:hover { border-color: var(--paper); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
+  h2 { margin: 0; font-size: 34px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 16px 18px; backdrop-filter: blur(6px); }
+
+  .levels { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; width: min(980px, 100%); }
+  .card { position: relative; text-align: left; color: var(--paper); border-radius: 20px; padding: 14px 16px 12px; min-height: 140px; overflow: hidden;
+    border: 2px solid var(--line); background: linear-gradient(160deg, var(--c1), var(--c2)); box-shadow: 0 6px 0 rgba(0,0,0,.35); }
+  .card:hover:not([disabled]) { transform: translateY(-3px); border-color: #fff; }
+  .card[disabled] { filter: grayscale(.9) brightness(.6); cursor: not-allowed; }
+  .card .num { font-size: 13px; opacity: .85; font-weight: 800; letter-spacing: 1px; }
+  .card .name { font-size: 25px; font-weight: 800; line-height: 1.1; text-shadow: 0 2px 0 rgba(0,0,0,.3); }
+  .card .meta { font-size: 14px; margin-top: 6px; opacity: .95; }
+  .card .lock { position: absolute; right: 12px; top: 10px; font-size: 26px; }
+  .card svg { position: absolute; right: -6px; bottom: -6px; width: 92px; height: 92px; opacity: .55; }
+  .seedrow input { width: 120px; font: inherit; font-size: 17px; padding: 6px 10px; border-radius: 10px; border: 2px solid var(--line); background: rgba(0,0,0,.25); color: var(--paper); }
+  .toggle { display: flex; gap: 8px; align-items: center; font-size: 15px; opacity: .9; }
+
+  #garage { justify-content: flex-end; align-items: stretch; }
+  .garage-panel { width: min(440px, 100%); margin-left: auto; max-height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+  .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .chip { background: rgba(255,255,255,.08); color: var(--paper); border: 2px solid transparent; border-radius: 14px; padding: 8px 6px; font-size: 15px; line-height: 1.1; }
+  .chip.sel { border-color: var(--accent2); background: rgba(255, 201, 60, .18); }
+  .chip small { display: block; opacity: .7; font-size: 12px; }
+  .swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sw { width: 34px; height: 34px; border-radius: 50%; border: 3px solid transparent; }
+  .sw.sel { border-color: #fff; box-shadow: 0 0 0 2px var(--ink); }
+  .stat { display: grid; grid-template-columns: 80px 1fr; align-items: center; gap: 8px; font-size: 15px; }
+  .bar { height: 10px; border-radius: 6px; background: rgba(255,255,255,.12); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 6px; transition: width .2s; }
+  .label { font-size: 13px; letter-spacing: 1px; text-transform: uppercase; opacity: .7; font-weight: 800; }
+
+  #hud { position: fixed; inset: 0; pointer-events: none; }
+  .hud-tl { position: absolute; left: 16px; top: 12px; }
+  .hud-tr { position: absolute; right: 16px; top: 12px; text-align: right; }
+  .hud-bl { position: absolute; left: 16px; bottom: 14px; }
+  .hud-br { position: absolute; right: 16px; bottom: 14px; text-align: right; }
+  .pos { font-size: 64px; font-weight: 800; line-height: .9; color: var(--accent2); text-shadow: 0 4px 0 #c2410c, 0 6px 16px rgba(0,0,0,.5); }
+  .pos sup { font-size: 28px; }
+  .hudtxt { font-size: 22px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,.7); }
+  .item { width: 78px; height: 78px; border-radius: 18px; background: var(--panel); border: 3px solid var(--line); display: grid; place-items: center; font-size: 34px; }
+  .item small { font-size: 16px; margin-left: -4px; align-self: end; margin-bottom: 14px; }
+  .item { grid-auto-flow: column; white-space: nowrap; }
+  .item.rolling { animation: wob .15s infinite alternate; }
+  @keyframes wob { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+  #minimap { width: 170px; height: 170px; display: block; }
+  .speed { font-size: 40px; font-weight: 800; line-height: 1; text-shadow: 0 2px 6px rgba(0,0,0,.7); }
+  .speed small { font-size: 16px; opacity: .8; }
+  .drift { height: 8px; width: 140px; margin-left: auto; border-radius: 4px; background: rgba(0,0,0,.4); overflow: hidden; margin-top: 6px; }
+  .drift i { display: block; height: 100%; width: 0; background: #fff; }
+  #countdown { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; font-size: 160px; font-weight: 800; color: var(--accent2);
+    text-shadow: 0 8px 0 #c2410c, 0 16px 30px rgba(0,0,0,.5); }
+  #toast { position: fixed; top: 22%; left: 50%; transform: translateX(-50%); font-size: 34px; font-weight: 800; pointer-events: none;
+    text-shadow: 0 3px 0 rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.5); transition: opacity .3s; text-align: center; opacity: 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 18px; }
+  td { padding: 4px 8px; border-bottom: 1px solid var(--line); }
+  tr.me td { color: var(--accent2); font-weight: 800; }
+  .help { font-size: 16px; line-height: 1.6; max-width: 520px; }
+  kbd { background: rgba(255,255,255,.15); border-radius: 6px; padding: 0 6px; font-family: inherit; }
+
+  #touch { position: fixed; inset: auto 0 0 0; height: 46%; pointer-events: none; }
+  #touch button { pointer-events: auto; position: absolute; width: 74px; height: 74px; border-radius: 50%; background: rgba(255,255,255,.18);
+    border: 2px solid rgba(255,255,255,.35); color: #fff; font-size: 22px; font-weight: 800; touch-action: none; }
+  #touch button.on { background: rgba(255,255,255,.4); }
+  @media (max-width: 640px) {
+    .pos { font-size: 46px; } #minimap { width: 120px; height: 120px; } .speed { font-size: 28px; }
+    .hud-br { bottom: auto; top: 110px; } .item { width: 60px; height: 60px; font-size: 26px; }
+    .hud-bl { bottom: auto; top: 128px; }
+    #toast { font-size: 24px; width: 90vw; }
+    #garage { justify-content: flex-end; } .garage-panel { max-height: 62%; margin-top: auto; }
+  }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<section id="title" class="screen">
+  <h1 class="logo">MASCOT<span>KART</span></h1>
+  <p class="tag">Every track is grown from a seed. Pick a mascot, pick a kart, race.</p>
+  <button class="big" data-go="levels">Play</button>
+  <div class="row">
+    <button class="ghost" data-go="help">How to play</button>
+    <button class="ghost" id="muteBtn">Sound: on</button>
+  </div>
+</section>
+
+<section id="help" class="screen" hidden>
+  <div class="panel help">
+    <h2>How to play</h2>
+    <div><kbd>W</kbd>/<kbd>↑</kbd> gas · <kbd>S</kbd>/<kbd>↓</kbd> brake/reverse · <kbd>A</kbd><kbd>D</kbd>/<kbd>←</kbd><kbd>→</kbd> steer</div>
+    <div><kbd>Space</kbd>/<kbd>Shift</kbd> hold while turning to <b>drift</b>. Sparks turn blue, then orange. Let go for a mini-turbo.</div>
+    <div><kbd>E</kbd>/<kbd>X</kbd> use item · <kbd>R</kbd> back on track · <kbd>C</kbd> camera · <kbd>Esc</kbd>/<kbd>P</kbd> pause · <kbd>M</kbd> mute</div>
+    <div>Hit <b>orange arrow pads</b> for a boost and <b>? boxes</b> for items: 🔥 Turbo, 🍌 Banana, 🫧 Shield.</div>
+    <div>Rocket start: press gas just after <b>2</b> shows. Too early and you'll stall.</div>
+    <div>Finish in the top 3 to unlock the next track.</div>
+  </div>
+  <button class="big" data-go="title">Got it</button>
+</section>
+
+<section id="levels" class="screen scroll" hidden>
+  <h2>Choose a track</h2>
+  <div class="levels" id="levelGrid"></div>
+  <div class="panel row seedrow">
+    <span>🎲 Endless random track, seed</span>
+    <input id="seedInput" type="number" min="1" max="999999" value="4242">
+    <button class="ghost" id="diceBtn">Roll</button>
+    <button class="big" id="randomGo" style="font-size:20px;padding:6px 22px">Race it</button>
+  </div>
+  <label class="toggle"><input type="checkbox" id="useBlender" checked> Use Blender-built scenery from <code>assets/levels/</code> when present</label>
+  <button class="ghost" data-go="title">Back</button>
+</section>
+
+<section id="garage" class="screen" hidden>
+  <div class="panel garage-panel">
+    <div class="row" style="justify-content:space-between"><h2 id="garageTitle">Garage</h2><button class="ghost" data-go="levels">Back</button></div>
+    <div class="label">Mascot</div>
+    <div class="chips" id="mascotChips"></div>
+    <div class="label">Kart</div>
+    <div class="chips" id="kartChips"></div>
+    <div class="label">Paint</div>
+    <div class="swatches" id="swatches"></div>
+    <div id="stats"></div>
+    <button class="big" id="raceBtn">Race!</button>
+  </div>
+</section>
+
+<div id="hud" hidden>
+  <div class="hud-tl">
+    <div class="pos" id="hudPos">1<sup>st</sup></div>
+    <div class="hudtxt" id="hudLap">Lap 1/3</div>
+    <div class="hudtxt" id="hudTime">0:00.00</div>
+  </div>
+  <div class="hud-tr"><div class="item" id="hudItem"></div></div>
+  <div class="hud-bl"><canvas id="minimap" width="340" height="340"></canvas></div>
+  <div class="hud-br">
+    <div class="speed"><span id="hudSpeed">0</span> <small>km/h</small></div>
+    <div class="drift"><i id="hudDrift"></i></div>
+  </div>
+</div>
+<div id="countdown" hidden></div>
+<div id="toast"></div>
+
+<section id="pause" class="screen" hidden style="background:rgba(0,0,0,.45)">
+  <h2>Paused</h2>
+  <button class="big" id="resumeBtn">Resume</button>
+  <div class="row"><button class="ghost" id="restartBtn">Restart</button><button class="ghost" id="quitBtn">Quit to menu</button></div>
+</section>
+
+<section id="results" class="screen" hidden style="background:rgba(0,0,0,.35)">
+  <div class="panel" style="width:min(460px,100%)">
+    <h2 id="resultTitle">Results</h2>
+    <table id="resultTable"></table>
+    <p id="resultNote" style="margin:10px 0 0"></p>
+  </div>
+  <div class="row">
+    <button class="big" id="nextBtn">Next track</button>
+    <button class="ghost" id="retryBtn">Retry</button>
+    <button class="ghost" id="menuBtn">Menu</button>
+  </div>
+</section>
+
+<div id="touch" hidden>
+  <button data-k="left" style="left:16px;bottom:40px">◀</button>
+  <button data-k="right" style="left:104px;bottom:40px">▶</button>
+  <button data-k="gas" style="right:16px;bottom:60px">GO</button>
+  <button data-k="brake" style="right:104px;bottom:20px">◼</button>
+  <button data-k="drift" style="right:104px;bottom:108px">≈</button>
+  <button data-k="item" style="right:16px;bottom:148px">★</button>
+  <button data-k="pause" style="position:fixed;left:50%;transform:translateX(-50%);top:12px;width:52px;height:52px;font-size:16px">II</button>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

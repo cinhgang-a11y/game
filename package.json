@@ -1,0 +1,12 @@
+{
+  "name": "mascot-kart",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Mascot kart racer with procedural tracks, built for the browser and Blender",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "test": "node tests/parity.test.mjs && node tests/track_sanity.test.mjs",
+    "build:levels": "blender -b -P blender/build_level.py -- --all --out assets/levels"
+  }
+}
